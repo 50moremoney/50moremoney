@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>50moremoney — Public Portfolio</title>
+<style>
+:root{--bg:#080c11;--card:#111820;--line:#26313d;--text:#f4f7fa;--muted:#8d99a8;--green:#53d779;--red:#ff6d6d;--blue:#8ab4ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1150px;margin:auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.logo{font-size:25px;font-weight:850}.logo span{color:var(--green)}.tag{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:7px 10px;border-radius:20px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px;margin-bottom:13px}.lab{font-size:12px;color:var(--muted)}.big{font-size:27px;font-weight:850;margin:5px 0}.green{color:var(--green)}.red{color:var(--red)}.muted{color:var(--muted)}
+h2{font-size:18px;margin:25px 0 9px}.two{display:grid;grid-template-columns:1fr 1fr;gap:13px}.form{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px}input,select{width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:#0d131a;color:#fff}button{padding:10px 14px;border:0;border-radius:9px;background:var(--green);font-weight:800;cursor:pointer}button.dark{background:#27313c;color:#fff}button.del{background:#302225;color:#ffb1b1}
+table{width:100%;border-collapse:collapse}th,td{padding:11px 6px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;white-space:nowrap}th{color:var(--muted);font-weight:500}.note{font-size:12px;line-height:1.65;color:var(--muted)}.status{display:flex;justify-content:space-between;gap:12px;align-items:center}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#d8a73a;margin-right:6px}.progress{height:9px;background:#202936;border-radius:99px;overflow:hidden}.bar{height:100%;background:var(--green)}
+@media(max-width:780px){.wrap{padding:13px}.grid,.two{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr 1fr}.form button{grid-column:1/-1}}@media(max-width:500px){.grid,.two{grid-template-columns:1fr}}
+</style></head>
+<body><div class="wrap">
+<header><div class="logo">50<span>moremoney</span></div><div class="tag">PUBLIC PORTFOLIO • V4</div></header>
+
+<div class="card status"><div><div class="lab">Market data</div><b id="status"><span class="dot"></span>MANUAL / API READY</b></div><button class="dark" onclick="togglePublic()">สลับการแสดงข้อมูล</button></div>
+
+<div class="grid">
+<div class="card"><div class="lab">มูลค่าพอร์ต THB</div><div class="big" id="thb">—</div></div>
+<div class="card"><div class="lab">มูลค่าพอร์ต USD</div><div class="big" id="usd">—</div></div>
+<div class="card"><div class="lab">ต้นทุน USD</div><div class="big" id="cost">—</div></div>
+<div class="card"><div class="lab">P/L</div><div class="big muted" id="pl">—</div></div>
+</div>
+
+<h2>Settings</h2><div class="card">
+<div class="form">
+<select id="provider"><option value="manual">Manual</option><option value="alpaca">Alpaca</option><option value="webull">Webull</option></select>
+<input id="fx" type="number" step="0.0001" placeholder="USD/THB เช่น 32.50">
+<input id="goal" type="number" placeholder="เป้าหมาย THB">
+<input id="weekly" type="number" placeholder="DCA / สัปดาห์">
+<button onclick="saveSettings()">บันทึก</button>
+</div>
+<p class="note">สำหรับเว็บสาธารณะ ห้ามใส่ API Secret ลงในไฟล์นี้. V4 เก็บเฉพาะค่าที่ไม่ลับ เช่น FX และเป้าหมายไว้ใน browser.</p>
+</div>
+
+<h2>เพิ่มรายการซื้อ</h2><div class="card"><div class="form">
+<input id="t" placeholder="Ticker เช่น PL"><input id="s" type="number" step="0.000001" placeholder="จำนวนหุ้น"><input id="p" type="number" step="0.0001" placeholder="ราคาซื้อ USD"><input id="d" type="date"><button onclick="add()">เพิ่ม</button>
+</div><p class="note">เพิ่มหุ้นตัวเดิมหลายครั้งได้ ระบบรวมจำนวนและคำนวณต้นทุนเฉลี่ยถ่วงน้ำหนัก.</p></div>
+
+<h2>ราคาปัจจุบัน</h2><div class="card" style="overflow:auto"><table><thead><tr><th>หุ้น</th><th>จำนวน</th><th>ต้นทุนเฉลี่ย</th><th>ราคาปัจจุบัน USD</th><th>มูลค่า USD</th><th>P/L</th><th>แหล่งราคา</th></tr></thead><tbody id="hold"></tbody></table></div>
+
+<h2>รายการซื้อ</h2><div class="card" style="overflow:auto"><table><thead><tr><th>วันที่</th><th>หุ้น</th><th>จำนวน</th><th>ราคา</th><th>ต้นทุน</th><th></th></tr></thead><tbody id="tx"></tbody></table></div>
+
+<div class="two">
+<div><h2>DCA</h2><div class="card"><div class="lab">เป้าหมายรายสัปดาห์</div><div class="big" id="weeklyShow">฿500</div><div class="progress"><div class="bar" style="width:0%" id="goalbar"></div></div><p class="note">ตั้งค่าเป้าหมายได้จาก Settings</p></div></div>
+<div><h2>Public / Private</h2><div class="card"><p class="note">โหมด Public จะซ่อนรายละเอียดจำนวนเงินได้ในภายหลัง เพื่อให้คุณเผยแพร่พอร์ตโดยเลือกข้อมูลที่ต้องการให้คนอื่นเห็น</p></div></div>
+</div>
+
+<p class="note" style="text-align:center;padding:20px">50moremoney • Educational portfolio tracker • Not financial advice</p>
+</div>
+<script>
+let tx=JSON.parse(localStorage.getItem("50mm4_tx")||"[]");
+let prices=JSON.parse(localStorage.getItem("50mm4_prices")||"{}");
+let cfg=JSON.parse(localStorage.getItem("50mm4_cfg")||'{"fx":32.5,"goal":100000,"weekly":500,"provider":"manual"}');
+let publicMode=localStorage.getItem("50mm4_public")!=="false";
+const f=n=>Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+function saveSettings(){cfg.provider=document.getElementById("provider").value;cfg.fx=+document.getElementById("fx").value||32.5;cfg.goal=+document.getElementById("goal").value||100000;cfg.weekly=+document.getElementById("weekly").value||500;localStorage.setItem("50mm4_cfg",JSON.stringify(cfg));render()}
+function add(){let t=document.getElementById("t").value.trim().toUpperCase(),s=+document.getElementById("s").value,p=+document.getElementById("p").value,d=document.getElementById("d").value||new Date().toISOString().slice(0,10);if(!t||s<=0||p<=0)return alert("กรอกข้อมูลให้ครบครับ");tx.push({t,s,p,d});localStorage.setItem("50mm4_tx",JSON.stringify(tx));["t","s","p","d"].forEach(x=>document.getElementById(x).value="");render()}
+function del(i){tx.splice(i,1);localStorage.setItem("50mm4_tx",JSON.stringify(tx));render()}
+function togglePublic(){publicMode=!publicMode;localStorage.setItem("50mm4_public",publicMode);render()}
+function agg(){let m={};tx.forEach(x=>{m[x.t]??={s:0,c:0};m[x.t].s+=x.s;m[x.t].c+=x.s*x.p});return m}
+function render(){
+ document.getElementById("provider").value=cfg.provider;document.getElementById("fx").value=cfg.fx;document.getElementById("goal").value=cfg.goal;document.getElementById("weekly").value=cfg.weekly;
+ let m=agg(),total=0,cost=0,h=document.getElementById("hold");h.innerHTML="";
+ Object.entries(m).forEach(([t,x])=>{let avg=x.c/x.s,cur=+prices[t],v=cur>0?x.s*cur:null,pl=v===null?null:v-x.c;cost+=x.c;if(v!==null)total+=v;let r=document.createElement("tr");r.innerHTML="<td><b>"+t+"</b></td><td>"+f(x.s)+"</td><td>$"+f(avg)+"</td><td>"+(v===null?"—":"$"+f(cur))+"</td><td>"+(v===null?"—":"$"+f(v))+"</td><td class='"+(pl===null?"muted":pl>=0?"green":"red")+"'>"+(pl===null?"—":(pl>=0?"+":"")+"$"+f(pl))+"</td><td><span class='muted'>"+(cfg.provider==="manual"?"Manual":"API-ready")+"</span></td>";h.appendChild(r)});
+ document.getElementById("cost").textContent=publicMode?"—":"$"+f(cost);document.getElementById("usd").textContent=total?"$"+f(total):"—";document.getElementById("thb").textContent=total?"฿"+f(total*cfg.fx):"—";
+ let P=total?total-cost:null,pe=document.getElementById("pl");pe.textContent=P===null?"—":(P>=0?"+":"")+"$"+f(P);pe.className="big "+(P===null?"muted":P>=0?"green":"red");
+ document.getElementById("weeklyShow").textContent="฿"+f(cfg.weekly);document.getElementById("goalbar").style.width=Math.min(100,total*cfg.fx/cfg.goal*100)+"%";
+ document.getElementById("status").innerHTML='<span class="dot"></span>'+ (cfg.provider==="manual"?"MANUAL — ยังไม่มีราคาตลาด":"API READY — ต้องใส่ credentials ฝั่ง server");
+ let tr=document.getElementById("tx");tr.innerHTML="";tx.slice().reverse().forEach((x,j)=>{let i=tx.length-1-j,r=document.createElement("tr");r.innerHTML="<td>"+x.d+"</td><td>"+x.t+"</td><td>"+f(x.s)+"</td><td>$"+f(x.p)+"</td><td>$"+f(x.s*x.p)+"</td><td><button class='del' onclick='del("+i+")'>ลบ</button></td>";tr.appendChild(r)})
+}
+render();
+</script></body></html>
